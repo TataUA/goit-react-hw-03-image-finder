@@ -14,7 +14,7 @@ export class App extends Component {
     gallery: [],
     totalHits: 0,
     page: 1,
-    modal: { isOpen: false, visibleImage: null },
+    modal: null,
     error: null,
   };
 
@@ -38,8 +38,17 @@ export class App extends Component {
       try {
         this.setState({ loading: true });
         const response = await fetchImages(query, page);
+        const images = response.hits.map(
+          ({ id, webformatURL, largeImageURL, tags }) => ({
+            id,
+            webformatURL,
+            largeImageURL,
+            tags,
+          })
+        );
+
         this.setState({
-          gallery: [...gallery, ...response.hits],
+          gallery: [...gallery, ...images],
           totalHits: response.totalHits,
         });
       } catch (error) {
@@ -54,37 +63,21 @@ export class App extends Component {
     this.setState(prevState => ({ page: prevState.page + 1 }));
   };
 
-  onOpenModal = image => {
-    this.setState({ modal: { isOpen: true, visibleImage: image } });
-  };
-
-  onCloseModal = () => {
-    this.setState({ modal: { isOpen: false, visibleImage: null } });
+  toggleModal = (image = null) => {
+    this.setState({ modal: image });
   };
 
   render() {
-    const {
-      loading,
-      gallery,
-      modal: { isOpen, visibleImage },
-      totalHits,
-      error,
-    } = this.state;
+    const { loading, gallery, modal, totalHits, error } = this.state;
     return (
       <Container>
         <Searchbar onSubmit={this.handleChange} />
         {loading && <Loader />}
-        <ImageGallery
-          images={gallery}
-          onOpenModal={this.onOpenModal}
-          onCloseModal={this.onCloseModal}
-        />
+        <ImageGallery images={gallery} onOpenModal={this.toggleModal} />
         {gallery.length > 0 && gallery.length < totalHits && (
           <Button onLoadMore={this.onLoadMoreBtn} />
         )}
-        {isOpen && (
-          <Modal largeImage={visibleImage} onCloseModal={this.onCloseModal} />
-        )}
+        {modal && <Modal largeImage={modal} onCloseModal={this.toggleModal} />}
         {error && <Err>Something went wrong... &#128576;</Err>}
       </Container>
     );
